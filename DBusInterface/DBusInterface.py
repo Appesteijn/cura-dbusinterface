@@ -52,6 +52,12 @@ class _ApplicationAdaptor(QDBusAbstractAdaptor):
     def quit(self):
         Application.getInstance().quit()
 
+    @pyqtSlot(str, str)
+    def saveFile(self, file_path, mime_type = "text/x-gcode"):
+        nodes = Application.getInstance().getController().getScene().getRoot()
+        output_device = Application.getInstance().getOutputDeviceManager().getOutputDevice("local_file")
+        output_device.requestWrite(nodes, file_path, [mime_type], None, silent = True, preferred_mimetype = mime_type)
+
     @pyqtProperty(str)
     def versionString(self):
         return Application.getInstance().getVersion()
