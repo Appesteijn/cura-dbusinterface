@@ -16,14 +16,15 @@
     along with this program. If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, pyqtProperty, Q_CLASSINFO, QObject
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, pyqtProperty, Q_CLASSINFO, QObject, QUrl
 from PyQt5.QtDBus import QDBusAbstractAdaptor, QDBusConnection
 
-import UM.Application
-import UM.Extension
-import UM.Logger
+from UM.Application import Application
+from UM.Extension import Extension
+from UM.Logger import Logger
+from UM.OutputDevice.OutputDeviceManager import OutputDeviceManager
 
-class DBusInterface(QObject, UM.Extension):
+class DBusInterface(QObject, Extension):
     def __init__(self, parent = None):
         super().__init__(parent = parent)
 
@@ -45,15 +46,15 @@ class _ApplicationAdaptor(QDBusAbstractAdaptor):
 
     @pyqtSlot(str)
     def openFile(self, file_path):
-        UM.Application.getInstance()._openFile(file_path)
+        Application.getInstance().readLocalFile(QUrl.fromLocalFile(file_path))
 
     @pyqtSlot()
     def quit(self):
-        UM.Application.getInstance().quit()
+        Application.getInstance().quit()
 
     @pyqtProperty(str)
     def versionString(self):
-        return UM.Application.getInstance().getVersion()
+        return Application.getInstance().getVersion()
 
 class _BackendAdaptor(QDBusAbstractAdaptor):
     Q_CLASSINFO("D-Bus Interface", "nl.ultimaker.cura.Backend")
@@ -61,11 +62,11 @@ class _BackendAdaptor(QDBusAbstractAdaptor):
     def __init__(self, parent):
         super().__init__(parent)
 
-        self._backend = UM.Application.getInstance().getBackend()
+        self._backend = Application.getInstance().getBackend()
 
     @pyqtSlot()
     def slice(self):
-        self._backend.slice()
+        self._backend.forceSlice()
 
     @pyqtProperty(str)
     def state(self):
