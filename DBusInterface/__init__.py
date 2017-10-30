@@ -19,15 +19,7 @@
 from . import DBusInterface
 
 def getMetaData():
-    return {
-        "plugin": {
-            "name": "D-Bus Interface",
-            "author": "Arjen Hiemstra",
-            "version": "1.0",
-            "description": "Exposes Cura on D-Bus to provide remote control capabilities.",
-            "api": 3
-        },
-    }
+    return {}
 
 def register(app):
     return { "extension": DBusInterface.DBusInterface() }
