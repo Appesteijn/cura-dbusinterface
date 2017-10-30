@@ -31,7 +31,7 @@ class DBusInterface(QObject, Extension):
         session_bus = QDBusConnection.sessionBus()
 
         if not session_bus.registerService("nl.ultimaker.cura"):
-            UM.Logger.log("w", "Could not register D-Bus service")
+            Logger.log("w", "Could not register D-Bus service")
             return
 
         self._application_adaptor = _ApplicationAdaptor(self)
