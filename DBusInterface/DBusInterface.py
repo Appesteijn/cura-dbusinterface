@@ -129,8 +129,72 @@ class _ApplicationAdaptor(QDBusAbstractAdaptor):
         machine_manager = Application.getInstance().getMachineManager()
 
         reply = message.createReply()
-        reply.setArguments([machine_manager.getActiveMaterial().getId()])
+        reply.setArguments([machine_manager.getActiveMaterial().serializeMetaData()])
         self._session_bus.send(reply)
+
+    @pyqtSlot(QDBusMessage)
+    def createMaterial(self, message: QDBusMessage):
+        from cura.Settings.ContainerManager import ContainerManager
+        container_manager = ContainerManager.getInstance()
+
+        new_id = message.arguments()[0]
+        new_name = message.arguments()[1]
+
+        container_manager.createMaterial(new_id = new_id, new_name = new_name)
+
+    @pyqtSlot(QDBusMessage)
+    def duplicateMaterial(self, message: QDBusMessage):
+        from cura.Settings.ContainerManager import ContainerManager
+        container_manager = ContainerManager.getInstance()
+
+        base_material_id = message.arguments()[0]  # material to duplicate from
+        new_id = message.arguments()[1]  # (preferred) duplicated material ID
+
+        container_manager.duplicateMaterial(base_material_id, new_id)
+
+    @pyqtSlot(QDBusMessage)
+    def hasMaterial(self, message: QDBusMessage):
+        machine_manager = Application.getInstance().getMachineManager()
+
+        material_id = message.arguments()[0]
+
+        reply = message.createReply()
+        reply.setArguments([machine_manager.hasMaterial(material_id)])
+        self._session_bus.send(reply)
+
+    @pyqtSlot(QDBusMessage)
+    def getMaterial(self, message: QDBusMessage):
+        from UM.Settings.ContainerRegistry import ContainerRegistry
+        container_registry = ContainerRegistry.getInstance()
+
+        material_id = message.arguments()[0]
+
+        material = container_registry.findInstanceContainers(id = material_id, type = "material")
+        material_data = None
+        if material:
+            material = material[0]
+            material_data = material.serializeMetaData()
+
+        reply = message.createReply()
+        reply.setArguments([material_data])
+        self._session_bus.send(reply)
+
+    @pyqtSlot(QDBusMessage)
+    def renameMaterial(self, message: QDBusMessage):
+        machine_manager = Application.getInstance().getMachineManager()
+
+        material_id = message.arguments()[0]
+        new_material_name = message.arguments()[1]
+
+        machine_manager.renameMaterial(material_id, new_material_name)
+
+    @pyqtSlot(QDBusMessage)
+    def removeMaterial(self, message: QDBusMessage):
+        machine_manager = Application.getInstance().getMachineManager()
+
+        material_id = message.arguments()[0]
+
+        machine_manager.removeMaterial(material_id)
 
     @pyqtSlot(QDBusMessage)
     def saveFile(self, message: QDBusMessage):
