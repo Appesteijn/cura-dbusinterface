@@ -198,6 +198,23 @@ class _ApplicationAdaptor(QDBusAbstractAdaptor):
         machine_manager.removeMaterial(material_id)
 
     @pyqtSlot(QDBusMessage)
+    def importMaterial(self, message: QDBusMessage):
+        material_file_path = message.arguments()[0]
+
+        from cura.Settings.ContainerManager import ContainerManager
+        container_manager = ContainerManager.getInstance()
+        container_manager.importContainer(material_file_path)
+
+    @pyqtSlot(QDBusMessage)
+    def exportMaterial(self, message: QDBusMessage):
+        material_id = message.arguments()[0]
+        material_file_path = message.arguments()[1]
+
+        from cura.Settings.ContainerManager import ContainerManager
+        container_manager = ContainerManager.getInstance()
+        container_manager.exportContainer(material_id, container_manager.getContainerNameFilters("material")[0], material_file_path)
+
+    @pyqtSlot(QDBusMessage)
     def saveFile(self, message: QDBusMessage):
         if not message.arguments() or len(message.arguments()) > 2:
             return
