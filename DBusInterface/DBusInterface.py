@@ -17,13 +17,14 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 import os
 
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, pyqtProperty, Q_CLASSINFO, QObject, QUrl
+from PyQt5.QtCore import pyqtSlot, pyqtProperty, Q_CLASSINFO, QObject, QUrl
 from PyQt5.QtDBus import QDBusAbstractAdaptor, QDBusConnection, QDBusMessage
 
 from UM.Application import Application
 from UM.Extension import Extension
 from UM.Logger import Logger
-from UM.OutputDevice.OutputDeviceManager import OutputDeviceManager
+
+from cura.Settings.ProfilesModel import ProfilesModel
 
 
 class DBusInterface(QObject, Extension):
@@ -213,6 +214,26 @@ class _ApplicationAdaptor(QDBusAbstractAdaptor):
     def getVersion(self):
         return Application.getInstance().getVersion()
 
+    @pyqtSlot(QDBusMessage)
+    def setQualityProfile(self, message: QDBusMessage):
+        qualityProfileName = message.arguments()[0]
+
+        machine_manager = Application.getInstance().getMachineManager()
+        machine_manager.setActiveQuality(qualityProfileName)
+
+    @pyqtSlot(QDBusMessage)
+    def getQualityProfiles(self, message: QDBusMessage):
+        available_quality_profiles = ProfilesModel.getInstance().items
+        qualities = []
+        for quality_profile in available_quality_profiles:
+            qualities.append({
+                "name":quality_profile["name"],
+                "id": quality_profile["id"]
+            })
+
+        reply = message.createReply()
+        reply.setArguments(qualities)
+        self._session_bus.send(reply)
 
 class _BackendAdaptor(QDBusAbstractAdaptor):
     Q_CLASSINFO("D-Bus Interface", "nl.ultimaker.cura.Backend")
