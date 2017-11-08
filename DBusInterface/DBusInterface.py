@@ -118,6 +118,21 @@ class _ApplicationAdaptor(QDBusAbstractAdaptor):
         machine_manager.setActiveMachine(machine_name)
 
     @pyqtSlot(QDBusMessage)
+    def setActiveMaterial(self, message: QDBusMessage):
+        material_id = message.arguments()[0]
+
+        machine_manager = Application.getInstance().getMachineManager()
+        machine_manager.setActiveMaterial(material_id)
+
+    @pyqtSlot(QDBusMessage)
+    def getActiveMaterial(self, message: QDBusMessage):
+        machine_manager = Application.getInstance().getMachineManager()
+
+        reply = message.createReply()
+        reply.setArguments([machine_manager.getActiveMaterial().getId()])
+        self._session_bus.send(reply)
+
+    @pyqtSlot(QDBusMessage)
     def saveFile(self, message: QDBusMessage):
         if not message.arguments() or len(message.arguments()) > 2:
             return
