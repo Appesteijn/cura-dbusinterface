@@ -215,6 +215,25 @@ class _ApplicationAdaptor(QDBusAbstractAdaptor):
         container_manager.exportContainer(material_id, container_manager.getContainerNameFilters("material")[0], material_file_path)
 
     @pyqtSlot(QDBusMessage)
+    def setActiveExtruder(self, message: QDBusMessage):
+        if len(message.arguments()) != 1:
+            return
+        extruder_position = int(message.arguments()[0])
+        extruder_manager = Application.getInstance().getExtruderManager()
+        extruder_manager.setActiveExtruderIndex(extruder_position)
+
+    @pyqtSlot(QDBusMessage)
+    def getActiveExtruder(self, message: QDBusMessage):
+        extruder_manager = Application.getInstance().getExtruderManager()
+        active_extruder = extruder_manager.getActiveExtruderStack()
+
+        extruder_data = active_extruder.serializeMetaData()
+
+        reply = message.createReply()
+        reply.setArguments([extruder_data])
+        self._session_bus.send(reply)
+
+    @pyqtSlot(QDBusMessage)
     def saveFile(self, message: QDBusMessage):
         if not message.arguments() or len(message.arguments()) > 2:
             return
