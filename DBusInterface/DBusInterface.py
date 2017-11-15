@@ -15,6 +15,7 @@ GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
+import json
 import os
 
 from PyQt5.QtCore import pyqtSlot, pyqtProperty, Q_CLASSINFO, QObject, QUrl
@@ -244,7 +245,7 @@ class _ApplicationAdaptor(QDBusAbstractAdaptor):
 
         nodes = Application.getInstance().getController().getScene().getRoot()
         output_device = Application.getInstance().getOutputDeviceManager().getOutputDevice("local_file")
-        output_device.requestWrite(nodes, file_path, [mime_type], None, silent = True, preferred_mimetype = mime_type)
+        output_device.requestWrite(nodes, file_path, [mime_type], silent = True, preferred_mimetype = mime_type)
 
     @pyqtProperty(str)
     def getVersion(self):
@@ -256,6 +257,19 @@ class _ApplicationAdaptor(QDBusAbstractAdaptor):
 
         machine_manager = Application.getInstance().getMachineManager()
         machine_manager.setActiveQuality(qualityProfileName)
+
+    @pyqtSlot(QDBusMessage)
+    def getActiveQuality(self, message: QDBusMessage):
+        machine_manager = Application.getInstance().getMachineManager()
+        quality = machine_manager.activeMachine.quality
+
+        data = quality.getMetaData().copy()
+        data["id"] = quality.getId()
+        data["name"] = quality.getName()
+
+        reply = message.createReply()
+        reply.setArguments([json.dumps(data)])
+        self._session_bus.send(reply)
 
     @pyqtSlot(QDBusMessage)
     def getQualityProfiles(self, message: QDBusMessage):
@@ -270,6 +284,7 @@ class _ApplicationAdaptor(QDBusAbstractAdaptor):
         reply = message.createReply()
         reply.setArguments(qualities)
         self._session_bus.send(reply)
+
 
 class _BackendAdaptor(QDBusAbstractAdaptor):
     Q_CLASSINFO("D-Bus Interface", "nl.ultimaker.cura.Backend")
