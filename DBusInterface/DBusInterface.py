@@ -21,7 +21,7 @@ import os
 from PyQt5.QtCore import pyqtSlot, pyqtProperty, Q_CLASSINFO, QObject, QUrl
 from PyQt5.QtDBus import QDBusAbstractAdaptor, QDBusConnection, QDBusMessage
 
-from UM.Application import Application
+from UM.Application import Application  # To find the scene to get the current g-code to write.
 from UM.Extension import Extension
 from UM.Logger import Logger
 
@@ -31,8 +31,8 @@ from cura.Settings.ProfilesModel import ProfilesModel
 class DBusInterface(QObject, Extension):
     DEFAULT_SESSION_ID = "nl.ultimaker.cura"
 
-    def __init__(self, parent = None):
-        super().__init__(parent = parent)
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
 
         # Use environment variable to optionally assign a unique session ID to a Cura instance so they won't interfere
         # with each other on the same channel.
@@ -54,14 +54,10 @@ class DBusInterface(QObject, Extension):
         self._application_adaptor = _ApplicationAdaptor(self)
         self._session_bus.registerObject("/Application", self._application_adaptor, QDBusConnection.ExportAllContents)
 
-        self._backend_adaptor = _BackendAdaptor(self)
-        self._session_bus.registerObject("/Backend", self._backend_adaptor, QDBusConnection.ExportAllContents)
-
-
 class _ApplicationAdaptor(QDBusAbstractAdaptor):
     Q_CLASSINFO("D-Bus Interface", "nl.ultimaker.cura.Application")
 
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         super().__init__(parent)
         self._session_bus = QDBusConnection.sessionBus()
 
@@ -142,7 +138,7 @@ class _ApplicationAdaptor(QDBusAbstractAdaptor):
         new_id = message.arguments()[0]
         new_name = message.arguments()[1]
 
-        container_manager.createMaterial(new_id = new_id, new_name = new_name)
+        container_manager.createMaterial(new_id=new_id, new_name=new_name)
 
     @pyqtSlot(QDBusMessage)
     def duplicateMaterial(self, message: QDBusMessage):
@@ -171,7 +167,7 @@ class _ApplicationAdaptor(QDBusAbstractAdaptor):
 
         material_id = message.arguments()[0]
 
-        material = container_registry.findInstanceContainers(id = material_id, type = "material")
+        material = container_registry.findInstanceContainers(id=material_id, type="material")
         material_data = None
         if material:
             material = material[0]
@@ -258,6 +254,9 @@ class _ApplicationAdaptor(QDBusAbstractAdaptor):
         machine_manager = Application.getInstance().getMachineManager()
         machine_manager.setActiveQuality(qualityProfileName)
 
+        reply = message.createReply()
+        self._session_bus.send(reply)
+
     @pyqtSlot(QDBusMessage)
     def getActiveQuality(self, message: QDBusMessage):
         machine_manager = Application.getInstance().getMachineManager()
@@ -277,7 +276,7 @@ class _ApplicationAdaptor(QDBusAbstractAdaptor):
         qualities = []
         for quality_profile in available_quality_profiles:
             qualities.append({
-                "name":quality_profile["name"],
+                "name": quality_profile["name"],
                 "id": quality_profile["id"]
             })
 
@@ -285,23 +284,16 @@ class _ApplicationAdaptor(QDBusAbstractAdaptor):
         reply.setArguments(qualities)
         self._session_bus.send(reply)
 
+    @pyqtSlot(QDBusMessage)
+    def clearBuildplate(self, message: QDBusMessage):
+        Application.getInstance().deleteAll()
 
-class _BackendAdaptor(QDBusAbstractAdaptor):
-    Q_CLASSINFO("D-Bus Interface", "nl.ultimaker.cura.Backend")
+        reply = message.createReply()
+        self._session_bus.send(reply)
 
-    def __init__(self, parent):
-        super().__init__(parent)
+    @pyqtSlot(QDBusMessage)
+    def slice(self, message: QDBusMessage):
+        Application.getInstance().getBackend().forceSlice()
 
-        self._backend = Application.getInstance().getBackend()
-
-    @pyqtSlot()
-    def slice(self):
-        self._backend.forceSlice()
-
-    @pyqtProperty(str)
-    def state(self):
-        return "unknown"
-
-    @pyqtProperty(int)
-    def progress(self):
-        return -1
+        reply = message.createReply()
+        self._session_bus.send(reply)
